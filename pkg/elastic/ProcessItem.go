@@ -2,66 +2,58 @@ package elastic
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/sam-caldwell/splunk-elastic-addon/pkg/data"
-	"github.com/sam-caldwell/splunk-elastic-addon/pkg/log"
-	"io"
+	"log"
 	"sync"
 	"time"
 )
 
 // ProcessItem - Run a query from Splunk, query elastic and return the results back to Splunk.
-func ProcessItem(item data.Item, wg *sync.WaitGroup) {
+func ProcessItem(itemId int, item data.Item, streamWorkingGroup *sync.WaitGroup) {
 	var (
-		err       error
-		es        *elasticsearch.Client
-		res       *esapi.Response
-		retries   int
-		startTime time.Time = time.Now()
-		workerWg  sync.WaitGroup
+		err           error
+		es            *elasticsearch.Client
+		res           *esapi.Response
+		workerWg      sync.WaitGroup
+		searchRetries int
+		scrollRetries int
 	)
+	defer streamWorkingGroup.Done()
 
-	defer wg.Done()
+	startTime := time.Now().Unix()
 
 	if es, err = CreateClient(item.ElasticHost, item.Username, item.Password, item.APIKey, item.CACertPath); err != nil {
-		log.Printf("Error creating Elasticsearch client: %s", err)
+		log.Printf("[item_%d]Error creating Elasticsearch client: %s", itemId, err)
 		return
 	}
 
-	if res, retries, err = SearchWithRetry(es, item.ElasticIndex, item.QueryString); err != nil {
-		log.Printf("Initial search failed after retries: %s", err)
+	if res, searchRetries, err = SearchWithRetry(itemId, es, item.ElasticIndex, item.QueryString); err != nil {
+		log.Printf("[item_%d]Initial search failed after %d retries: %s", itemId, searchRetries, err)
 		return
 	}
 
-	defer func(Body io.ReadCloser) {
-		if err := Body.Close(); err != nil {
-			log.Printf("Error closing Body: %s", err)
-		}
-	}(res.Body)
+	defer closeReader(res.Body)
 
-	hitsChan := make(chan interface{}, hitQueueSize)
-	for i := 0; i < 3; i++ {
-		workerWg.Add(1)
-		go ProcessRecordSet(hitsChan, &workerWg)
-	}
+	hitsChan := make(chan any, hitQueueSize)
+	ProcessRecordSet(hitsChan, &workerWg)
 
-	scrollID := ""
-	batchID := 0
-	totalRetries := retries
+	scrollId := ""
+	batchId := 0
 
 	for {
-		batchID++
-		var result map[string]interface{}
-		err := json.NewDecoder(res.Body).Decode(&result)
-		if err != nil {
-			fmt.Printf("Error decoding response body: %s", err)
+		var (
+			result map[string]any
+			hits   []any
+		)
+
+		if err = json.NewDecoder(res.Body).Decode(&result); err != nil {
+			log.Printf("[item_%d][batch_%d]Error decoding response body: %s", itemId, batchId, err)
 			return
 		}
 
-		hits := result["hits"].(map[string]interface{})["hits"].([]interface{})
-		if len(hits) == 0 {
+		if hits = result["hits"].(map[string]any)["hits"].([]any); len(hits) == 0 {
 			break
 		}
 
@@ -69,26 +61,28 @@ func ProcessItem(item data.Item, wg *sync.WaitGroup) {
 			hitsChan <- hit
 		}
 
-		scrollID = result["_scroll_id"].(string)
+		scrollId = result["_scroll_id"].(string)
 
-		res, retries, err = ScrollWithRetry(es, scrollID)
-		totalRetries += retries
+		res, scrollRetries, err = ScrollWithRetry(itemId, batchId, es, &scrollId)
+
 		if err != nil {
-			log.Printf("Scroll request failed after retries: %s", err)
+			log.Printf("[item_%d][batch_%d]Scroll request failed after %d retries: %s",
+				itemId, batchId, scrollRetries, err)
 			break
 		}
 
-		log.Printf("Batch %d processed successfully", batchID)
+		log.Printf("[item_%d][batch_%d]Batch processed successfully", itemId, batchId)
+
+		batchId++
 	}
 
 	close(hitsChan)
 	workerWg.Wait()
 
-	_, err = es.ClearScroll(es.ClearScroll.WithScrollID(scrollID))
-	if err != nil {
-		log.Printf("Failed to clear scroll: %s", err)
+	if _, err = es.ClearScroll(es.ClearScroll.WithScrollID(scrollId)); err != nil {
+		log.Printf("[item_%d][batch_%d]Failed to clear scroll: %s", itemId, batchId, err)
 	}
 
-	endTime := time.Now()
-	log.Printf("Query completed - Start: %s, End: %s, Total Batches: %d, Total Retries: %d", startTime, endTime, batchID, totalRetries)
+	log.Printf("[item_%d]Query completed - Start: %d, End: %d, totalBatches: %d, searchRetries: %d, "+
+		"scrollRetries: %d", itemId, startTime, time.Now().Unix(), batchId+1, searchRetries, scrollRetries)
 }

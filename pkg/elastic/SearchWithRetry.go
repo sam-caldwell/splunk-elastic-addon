@@ -10,18 +10,15 @@ import (
 )
 
 // SearchWithRetry - Search the elastic cluster and retry on failure
-func SearchWithRetry(es *elasticsearch.Client, index, query string) (*esapi.Response, int, error) {
+func SearchWithRetry(itemId int, es *elasticsearch.Client, index,
+	query string) (res *esapi.Response, retries int, err error) {
 
-	var res *esapi.Response
-
-	var err error
-
-	retries := 0
-
-	for attempt := 0; attempt < maxRetries; attempt++ {
+	for attempt := 1; attempt <= maxRetries; attempt++ {
 		res, err = es.Search(
 			es.Search.WithIndex(index),
-			es.Search.WithBody(strings.NewReader(fmt.Sprintf(`{"query":{"query_string":{"query":"%s"}}}`, query))),
+			es.Search.WithBody(
+				strings.NewReader(
+					fmt.Sprintf(`{"query":{"query_string":{"query":"%s"}}}`, query))),
 			es.Search.WithScroll(scrollTimeout),
 			es.Search.WithSize(batchSize),
 		)
@@ -29,7 +26,7 @@ func SearchWithRetry(es *elasticsearch.Client, index, query string) (*esapi.Resp
 			return res, retries, nil
 		}
 		retries++
-		log.Printf("Retrying initial search (attempt %d): %s", attempt+1, err)
+		log.Printf("[item %d][attempt %d/%d]Retrying initial search: %s", itemId, attempt, maxRetries, err)
 		time.Sleep(retryDelay)
 	}
 

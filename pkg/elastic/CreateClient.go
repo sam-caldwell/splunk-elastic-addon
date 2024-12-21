@@ -7,7 +7,10 @@ import (
 )
 
 // CreateClient - Create an elastic client
-func CreateClient(host, username, password, apiKey, caCertPath string) (*elasticsearch.Client, error) {
+func CreateClient(host, username, password, apiKey, caCertPath string) (es *elasticsearch.Client, err error) {
+
+	var caCert []byte
+
 	cfg := elasticsearch.Config{Addresses: []string{host}}
 
 	if trim(username) != "" && trim(password) != "" {
@@ -20,8 +23,7 @@ func CreateClient(host, username, password, apiKey, caCertPath string) (*elastic
 	}
 
 	if trim(caCertPath) != "" {
-		caCert, err := os.ReadFile(caCertPath)
-		if err != nil {
+		if caCert, err = os.ReadFile(caCertPath); err != nil {
 			return nil, fmt.Errorf("failed to read CA certificate: %w", err)
 		}
 		cfg.CACert = caCert

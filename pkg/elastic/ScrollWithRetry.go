@@ -7,21 +7,29 @@ import (
 	"time"
 )
 
-func ScrollWithRetry(es *elasticsearch.Client, scrollID string) (*esapi.Response, int, error) {
-	var res *esapi.Response
-	var err error
-	retries := 0
-	for attempt := 0; attempt < maxRetries; attempt++ {
+// ScrollWithRetry - iterate over the paginated elastic query results (with retries if needed)
+func ScrollWithRetry(itemId, batchId int, es *elasticsearch.Client, scrollId *string) (res *esapi.Response, retries int, err error) {
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+
 		res, err = es.Scroll(
-			es.Scroll.WithScrollID(scrollID),
+			es.Scroll.WithScrollID(*scrollId),
 			es.Scroll.WithScroll(scrollTimeout),
 		)
+
 		if err == nil {
 			return res, retries, nil
 		}
+
 		retries++
-		log.Printf("Retrying scroll request (attempt %d): %s", attempt+1, err)
+
+		log.Printf("[item %d][batch %d][attempt %d/%d]Retrying scroll request: %s",
+			itemId, batchId, attempt, maxRetries, err)
+
 		time.Sleep(retryDelay)
+
 	}
+
 	return nil, retries, err
+
 }
