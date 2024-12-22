@@ -8,15 +8,15 @@ services:
       - discovery.type=single-node
       - xpack.security.enabled=true
       - xpack.security.http.ssl.enabled=true
-      - xpack.security.http.ssl.key=config/certs/es/elasticsearch.key
-      - xpack.security.http.ssl.certificate=config/certs/es/elasticsearch.crt
-      - xpack.security.http.ssl.certificate_authorities=config/certs/ca/ca.crt
+      - xpack.security.http.ssl.key=certs/es/elasticsearch.key
+      - xpack.security.http.ssl.certificate=certs/es/elasticsearch.crt
+      - xpack.security.http.ssl.certificate_authorities=certs/ca/ca.crt
       - xpack.security.transport.ssl.enabled=true
       - xpack.security.transport.ssl.verification_mode=certificate
-      - xpack.security.transport.ssl.key=config/certs/es/elasticsearch.key
-      - xpack.security.transport.ssl.certificate=config/certs/es/elasticsearch.crt
-      - xpack.security.transport.ssl.certificate_authorities=config/certs/ca/ca.crt
-      - "ES_JAVA_OPTS=-Xms2048m -Xmx2048m"
+      - xpack.security.transport.ssl.key=certs/es/elasticsearch.key
+      - xpack.security.transport.ssl.certificate=certs/es/elasticsearch.crt
+      - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
+      - "ES_JAVA_OPTS=-Xms4096m -Xmx4096m"
     ports:
       - "9200:9200"
       - "9300:9300"
@@ -31,6 +31,11 @@ services:
     environment:
       - SPLUNK_START_ARGS=--accept-license
       - SPLUNK_PASSWORD=changeme
+      - SPLUNK_ENABLE_SSL=true
+      - SPLUNK_SERVER_CERT=/opt/splunk/certs/splunk/splunk.crt
+      - SPLUNK_SERVER_CERT_KEY=/opt/splunk/certs/splunk/splunk.key
+      - SPLUNK_CA_CERT=/opt/splunk/certs/ca/ca.crt
+      - SPLUNK_JAVA_OPTS=-Xms4096m -Xmx4096m
     ports:
       - "8000:8000"
       - "8088:8088"
