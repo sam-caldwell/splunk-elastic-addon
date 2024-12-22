@@ -40,8 +40,7 @@ func ProcessItem(traceId uuid.UUID, itemId int, item data.Item, streamWorkingGro
 	hitsChan := make(chan data.RecordSet, hitQueueSize)
 	ProcessRecordSet(traceId, hitsChan, &workerWg)
 
-	scrollId := ""
-	batchId := 0
+	scrollId, batchId := "", 0
 
 	for {
 		var (
