@@ -11,6 +11,10 @@ func CreateClient(host, username, password, apiKey, caCertPath string) (es *elas
 
 	var caCert []byte
 
+	if trim(host) == "" {
+		return nil, fmt.Errorf("host is required (cannot be empty)")
+	}
+
 	cfg := elasticsearch.Config{Addresses: []string{host}}
 
 	if trim(username) != "" && trim(password) != "" {
