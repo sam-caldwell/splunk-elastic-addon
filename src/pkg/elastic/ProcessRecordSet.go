@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/sam-caldwell/splunk-elastic-addon/pkg/data"
+	data2 "github.com/sam-caldwell/splunk-elastic-addon/src/pkg/data"
 	"log"
 	"os"
 	"sync"
@@ -12,7 +12,7 @@ import (
 )
 
 // ProcessRecordSet - Spawn three workers to marshal query results and write them to stdout.
-func ProcessRecordSet(traceId uuid.UUID, hitsChan <-chan data.RecordSet, wg *sync.WaitGroup) {
+func ProcessRecordSet(traceId uuid.UUID, hitsChan <-chan data2.RecordSet, wg *sync.WaitGroup) {
 	const (
 		workerCount = 3
 	)
@@ -26,8 +26,8 @@ func ProcessRecordSet(traceId uuid.UUID, hitsChan <-chan data.RecordSet, wg *syn
 			defer wg.Done()
 			id := 0
 			for hit := range hitsChan {
-				result := data.QueryResult{
-					Metadata: data.MetaData{
+				result := data2.QueryResult{
+					Metadata: data2.MetaData{
 						Time:     time.Now().Unix(),
 						TraceId:  traceId,
 						ItemId:   hit.ItemId,

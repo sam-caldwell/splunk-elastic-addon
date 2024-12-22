@@ -5,14 +5,14 @@ import (
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/google/uuid"
-	"github.com/sam-caldwell/splunk-elastic-addon/pkg/data"
+	data2 "github.com/sam-caldwell/splunk-elastic-addon/src/pkg/data"
 	"log"
 	"sync"
 	"time"
 )
 
 // ProcessItem - Run a query from Splunk, query elastic and return the results back to Splunk.
-func ProcessItem(traceId uuid.UUID, itemId int, item data.Item, streamWorkingGroup *sync.WaitGroup) {
+func ProcessItem(traceId uuid.UUID, itemId int, item data2.Item, streamWorkingGroup *sync.WaitGroup) {
 	var (
 		err           error
 		es            *elasticsearch.Client
@@ -37,7 +37,7 @@ func ProcessItem(traceId uuid.UUID, itemId int, item data.Item, streamWorkingGro
 
 	defer closeReader(res.Body)
 
-	hitsChan := make(chan data.RecordSet, hitQueueSize)
+	hitsChan := make(chan data2.RecordSet, hitQueueSize)
 	ProcessRecordSet(traceId, hitsChan, &workerWg)
 
 	scrollId, batchId := "", 0
@@ -58,7 +58,7 @@ func ProcessItem(traceId uuid.UUID, itemId int, item data.Item, streamWorkingGro
 		}
 
 		for _, hit := range hits {
-			hitsChan <- data.RecordSet{
+			hitsChan <- data2.RecordSet{
 				BatchId: batchId,
 				Hit:     hit,
 			}

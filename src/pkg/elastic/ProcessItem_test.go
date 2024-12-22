@@ -2,7 +2,7 @@ package elastic
 
 import (
 	"github.com/google/uuid"
-	"github.com/sam-caldwell/splunk-elastic-addon/pkg/data"
+	"github.com/sam-caldwell/splunk-elastic-addon/src/pkg/data"
 	"sync"
 	"testing"
 )
