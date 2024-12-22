@@ -1,4 +1,9 @@
 .idea/
+*.iml
 build/
-data/elastic
-data/splunk/data/
+data/
+*.log
+*.tmp
+tmp/
+log/
+temp/
