@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms2048m -Xmx2048m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - ./data/elastic:/usr/share/elasticsearch/data
+
+  splunk:
+    image: splunk/splunk:latest
+    container_name: splunk
+    environment:
+      - SPLUNK_START_ARGS=--accept-license
+      - SPLUNK_PASSWORD=insecure
+    ports:
+      - "8000:8000"
+      - "8088:8088"
+      - "8089:8089"
+    depends_on:
+      - elasticsearch
+    volumes:
+      - ./data/splunk/data:/opt/splunk/var
+      - ./data/splunk/apps:/opt/splunk/etc/apps
+
+volumes:
+  esdata:
+    driver: local
