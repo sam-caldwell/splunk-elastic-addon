@@ -12,12 +12,7 @@ func ScrollWithRetry(itemId, batchId int, es *elasticsearch.Client, scrollId *st
 
 	for attempt := 1; attempt <= maxRetries; attempt++ {
 
-		res, err = es.Scroll(
-			es.Scroll.WithScrollID(*scrollId),
-			es.Scroll.WithScroll(scrollTimeout),
-		)
-
-		if err == nil {
+		if res, err = es.Scroll(es.Scroll.WithScrollID(*scrollId), es.Scroll.WithScroll(scrollTimeout)); err != nil {
 			return res, retries, nil
 		}
 
