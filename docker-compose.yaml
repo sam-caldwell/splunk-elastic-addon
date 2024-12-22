@@ -6,20 +6,31 @@ services:
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
-      - xpack.security.enabled=false
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=true
+      - xpack.security.http.ssl.key=config/certs/es/elasticsearch.key
+      - xpack.security.http.ssl.certificate=config/certs/es/elasticsearch.crt
+      - xpack.security.http.ssl.certificate_authorities=config/certs/ca/ca.crt
+      - xpack.security.transport.ssl.enabled=true
+      - xpack.security.transport.ssl.verification_mode=certificate
+      - xpack.security.transport.ssl.key=config/certs/es/elasticsearch.key
+      - xpack.security.transport.ssl.certificate=config/certs/es/elasticsearch.crt
+      - xpack.security.transport.ssl.certificate_authorities=config/certs/ca/ca.crt
       - "ES_JAVA_OPTS=-Xms2048m -Xmx2048m"
     ports:
       - "9200:9200"
       - "9300:9300"
     volumes:
-      - ./data/elastic:/usr/share/elasticsearch/data
+      - esdata:/usr/share/elasticsearch/data
+      - ./data/certs/ca:/usr/share/elasticsearch/config/certs/ca
+      - ./data/certs/es:/usr/share/elasticsearch/config/certs/es
 
   splunk:
     image: splunk/splunk:latest
     container_name: splunk
     environment:
       - SPLUNK_START_ARGS=--accept-license
-      - SPLUNK_PASSWORD=insecure
+      - SPLUNK_PASSWORD=changeme
     ports:
       - "8000:8000"
       - "8088:8088"
@@ -27,8 +38,10 @@ services:
     depends_on:
       - elasticsearch
     volumes:
-      - ./data/splunk/data:/opt/splunk/var
-      - ./data/splunk/apps:/opt/splunk/etc/apps
+      - ./splunk/data:/opt/splunk/var
+      - ./splunk/apps:/opt/splunk/etc/apps
+      - ./data/certs/ca:/opt/splunk/certs/ca
+      - ./data/certs/splunk:/opt/splunk/certs/splunk
 
 volumes:
   esdata:
