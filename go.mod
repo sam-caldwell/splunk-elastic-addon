@@ -2,7 +2,10 @@ module github.com/sam-caldwell/splunk-elastic-addon
 
 go 1.23
 
-require github.com/elastic/go-elasticsearch/v8 v8.17.0
+require (
+	github.com/elastic/go-elasticsearch/v8 v8.17.0
+	github.com/google/uuid v1.6.0
+)
 
 require (
 	github.com/elastic/elastic-transport-go/v8 v8.6.0 // indirect

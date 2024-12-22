@@ -37,7 +37,7 @@ func ProcessItem(traceId uuid.UUID, itemId int, item data.Item, streamWorkingGro
 
 	defer closeReader(res.Body)
 
-	hitsChan := make(chan any, hitQueueSize)
+	hitsChan := make(chan data.RecordSet, hitQueueSize)
 	ProcessRecordSet(traceId, hitsChan, &workerWg)
 
 	scrollId := ""
@@ -59,7 +59,10 @@ func ProcessItem(traceId uuid.UUID, itemId int, item data.Item, streamWorkingGro
 		}
 
 		for _, hit := range hits {
-			hitsChan <- hit
+			hitsChan <- data.RecordSet{
+				BatchId: batchId,
+				Hit:     hit,
+			}
 		}
 
 		scrollId = result["_scroll_id"].(string)
