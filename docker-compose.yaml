@@ -4,6 +4,7 @@ services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
     container_name: elasticsearch
+    restart: always
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=true
@@ -21,13 +22,14 @@ services:
       - "9200:9200"
       - "9300:9300"
     volumes:
-      - esdata:/usr/share/elasticsearch/data
+      - ./data/elastic:/usr/share/elasticsearch/data
       - ./data/certs/ca:/usr/share/elasticsearch/config/certs/ca
       - ./data/certs/es:/usr/share/elasticsearch/config/certs/es
 
   splunk:
     image: splunk/splunk:latest
     container_name: splunk
+    restart: always
     environment:
       - SPLUNK_START_ARGS=--accept-license
       - SPLUNK_PASSWORD=changeme
@@ -43,10 +45,15 @@ services:
     depends_on:
       - elasticsearch
     volumes:
-      - ./splunk/data:/opt/splunk/var
-      - ./splunk/apps:/opt/splunk/etc/apps
+      - ./data/splunk/data:/opt/splunk/var
+      - ./data/splunk/apps:/opt/splunk/etc/apps
       - ./data/certs/ca:/opt/splunk/certs/ca
       - ./data/certs/splunk:/opt/splunk/certs/splunk
+    healthcheck:
+      test: ["CMD", "curl", "-f", "https://localhost:8089"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
 volumes:
   esdata:
