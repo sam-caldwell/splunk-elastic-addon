@@ -1,0 +1,12 @@
+<form>
+    <label>Elasticsearch Configuration</label>
+    <fieldset submitButton="true">
+        <input type="text" token="elastic_host" label="Elasticsearch Host">
+            <default>http://localhost:9200</default>
+        </input>
+        <input type="text" token="username" label="Username"></input>
+        <input type="password" token="password" label="Password"></input>
+        <input type="text" token="api_key" label="API Key"></input>
+        <input type="text" token="ca_cert_path" label="CA Certificate Path"></input>
+    </fieldset>
+</form>
